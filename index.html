@@ -17,8 +17,8 @@
 <script>
   const CONFIG = {
     API_URL: "/api",
-    CENTER: [10.5939, -66.9283],
-    ZOOM: 16
+    CENTER: [10.609995078010172, -66.88176226279427],
+    ZOOM: 12
   };
 
   const CATEGORIAS = [
@@ -31,7 +31,8 @@
   ];
 
   const FEATURES = {
-    panel: true   // botón de lista + nearest
+    panel:  true,  // botón de lista + nearest en topbar
+    recent: true   // panel top-left con últimos 3 pedidos abiertos
   };
 </script>
 
@@ -66,7 +67,8 @@
     box-shadow:0 0 0 4px rgba(10,166,184,.25);flex:none}
   .topbar h1{font-size:15px;font-weight:650;margin:0;line-height:1.15;letter-spacing:.2px}
   .topbar p{margin:1px 0 0;font-size:11.5px;color:#aab8c9;font-weight:500}
-  .count{margin-left:auto;text-align:right;flex:none}
+  .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex:none}
+  .count{text-align:right;flex:none}
   .count b{font-size:18px;font-weight:700;display:block;line-height:1}
   .count span{font-size:10px;color:#aab8c9;text-transform:uppercase;letter-spacing:.6px}
 
@@ -88,7 +90,7 @@
     background:var(--surface);border:1px solid var(--line);border-radius:10px;
     padding:8px 10px;font-size:11.5px;box-shadow:var(--shadow);line-height:1.85;
   }
-  .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  .legend svg{display:inline-block;vertical-align:middle;margin-right:5px}
 
   /* ---- FAB Publicar ---- */
   .fab{
@@ -223,7 +225,9 @@
     <h1>Pedidos</h1>
     <p id="mode-label">Cargando…</p>
   </div>
-  <div class="count"><b id="count-open">0</b><span>abiertos</span></div>
+  <div class="topbar-right">
+    <div class="count"><b id="count-open">0</b><span>abiertos</span></div>
+  </div>
 </header>
 
 <div id="banner" class="banner" role="status">
@@ -336,11 +340,14 @@
   }
 
   // ---------- Leyenda dinámica ----------
+  function _pinSvg(color){
+    return `<svg viewBox="0 0 24 32" width="9" height="12" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C7.6 0 4 3.6 4 8c0 6 8 20 8 20s8-14 8-20c0-4.4-3.6-8-8-8z" fill="${color}"/></svg>`;
+  }
   document.getElementById("legend").innerHTML =
     CATEGORIAS.map(c =>
-      `<div><i style="background:${c.color}"></i>${c.emoji} ${c.label}</div>`
+      `<div>${_pinSvg(c.color)}${c.emoji} ${c.label}</div>`
     ).join("") +
-    `<div><i style="background:var(--closed)"></i>Cerrado</div>`;
+    `<div>${_pinSvg("#8593a3")}Cerrado</div>`;
 
   // ---------- Mapa ----------
   const map = L.map("map", { zoomControl: false }).setView(CONFIG.CENTER, CONFIG.ZOOM);
@@ -358,9 +365,11 @@
   function icon(t){
     const c = colorFor(t);
     return L.divIcon({
-      className: "", iconSize: [22, 22], iconAnchor: [11, 11],
-      html: `<div style="width:18px;height:18px;border-radius:50%;background:${c};
-             border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>`
+      className: "", iconSize: [22, 29], iconAnchor: [11, 29],
+      html: `<svg viewBox="0 0 24 32" width="22" height="29" xmlns="http://www.w3.org/2000/svg" style="display:block;filter:drop-shadow(0 1px 3px rgba(0,0,0,.35))">
+        <path d="M12 0C7.6 0 4 3.6 4 8c0 6 8 20 8 20s8-14 8-20c0-4.4-3.6-8-8-8z" fill="${c}"/>
+        <circle cx="12" cy="8" r="3.5" fill="white" opacity=".9"/>
+      </svg>`
     });
   }
 
@@ -430,9 +439,11 @@
     if (pickMarker) map.removeLayer(pickMarker);
     pickMarker = L.marker(latlng, {
       icon: L.divIcon({
-        className: "", iconSize: [26, 26], iconAnchor: [13, 13],
-        html: `<div style="width:20px;height:20px;border-radius:50%;background:var(--signal);
-               border:3px solid #fff;box-shadow:0 0 0 6px rgba(10,166,184,.25)"></div>`
+        className: "", iconSize: [22, 29], iconAnchor: [11, 29],
+        html: `<svg viewBox="0 0 24 32" width="22" height="29" xmlns="http://www.w3.org/2000/svg" style="display:block;filter:drop-shadow(0 1px 4px rgba(10,166,184,.55))">
+          <path d="M12 0C7.6 0 4 3.6 4 8c0 6 8 20 8 20s8-14 8-20c0-4.4-3.6-8-8-8z" fill="var(--signal)"/>
+          <circle cx="12" cy="8" r="3.5" fill="white" opacity=".9"/>
+        </svg>`
       })
     }).addTo(map);
     const box = document.getElementById("locbox");
@@ -570,5 +581,6 @@
 </script>
 <!-- ===== MÓDULOS (features/) — se activan/desactivan con FEATURES en el <head> ===== -->
 <script src="features/panel.js"></script>
+<script src="features/recent.js"></script>
 </body>
 </html>

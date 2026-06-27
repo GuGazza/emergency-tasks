@@ -27,16 +27,15 @@
       // ---- Estilos propios del módulo ----
       const css = document.createElement("style");
       css.textContent = `
-        /* Botón flotante — espejo de la leyenda, lado derecho */
+        /* Botón en topbar, a la izquierda del contador */
         .pnl-btn{
-          position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 86px);
-          z-index:800;width:44px;height:44px;border-radius:50%;
-          border:1px solid var(--line,#dbe3ec);cursor:pointer;
-          background:var(--surface,#fff);color:var(--ink,#0f1b2d);
-          box-shadow:var(--shadow,0 6px 24px rgba(15,27,45,.16));
-          display:flex;align-items:center;justify-content:center;}
-        .pnl-btn:active{transform:scale(.94)}
-        .pnl-btn svg{width:20px;height:20px}
+          border:none;background:none;cursor:pointer;
+          color:rgba(255,255,255,.85);padding:6px;border-radius:8px;flex:none;
+          display:flex;align-items:center;justify-content:center;
+          transition:background .15s;}
+        .pnl-btn:hover{background:rgba(255,255,255,.12)}
+        .pnl-btn:active{background:rgba(255,255,255,.22);transform:scale(.94)}
+        .pnl-btn svg{width:22px;height:22px}
 
         /* Scrim propio (z-index entre el mapa y el form del core) */
         .pnl-scrim{
@@ -121,7 +120,9 @@
           <circle cx="3.5" cy="12" r="1.2" fill="currentColor" stroke="none"/>
           <circle cx="3.5" cy="18" r="1.2" fill="currentColor" stroke="none"/>
         </svg>`;
-      document.body.appendChild(panelBtn);
+      // Insertarlo en el topbar, a la izquierda del contador
+      const topbarRight = document.querySelector(".topbar-right");
+      topbarRight.insertBefore(panelBtn, topbarRight.querySelector(".count"));
 
       // ---- Panel sheet ----
       const scrim = document.createElement("div");
