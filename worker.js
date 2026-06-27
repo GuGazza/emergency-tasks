@@ -4,7 +4,7 @@
 // legible para poder detectar errores de escritura.
 
 const APPS_SCRIPT =
-  "REEMPLAZAR_CON_URL_EXEC_DE_APPS_SCRIPT";
+  "https://script.google.com/macros/s/AKfycbxqKW2VHxCNrKuYlSyHSG6squo4e5RTLwH06gUogjFkP3YXL3-9QbRsZpxFCCiRKmvY/exec";
 
 export default {
   async fetch(request, env) {
