@@ -11,7 +11,8 @@
      API_URL vacío  -> modo LOCAL (solo este dispositivo).
      API_URL "/api" -> COLABORATIVO (via Worker de Cloudflare).
      CENTER/ZOOM    -> vista inicial del mapa.
-     CATEGORIAS     -> lista de categorías con color y emoji.
+     CATEGORIAS     -> lista de categorías (v, label, emoji, color).
+     FEATURES       -> activar/desactivar módulos opcionales.
      =========================================================== -->
 <script>
   const CONFIG = {
@@ -28,6 +29,10 @@
     { v: "transporte",   label: "Transporte",          emoji: "🚗", color: "#7c3aed" },
     { v: "otros",        label: "Otros",               emoji: "📦", color: "#5c6b7e" }
   ];
+
+  const FEATURES = {
+    panel: true   // botón de lista + nearest
+  };
 </script>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -44,7 +49,6 @@
     --closed:#8593a3;
     --danger:#c8412f;
     --shadow:0 6px 24px rgba(15,27,45,.16);
-    --radius:14px;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
   *{box-sizing:border-box}
@@ -86,7 +90,7 @@
   }
   .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
 
-  /* ---- Botón publicar ---- */
+  /* ---- FAB Publicar ---- */
   .fab{
     position:fixed;left:50%;transform:translateX(-50%);
     bottom:calc(env(safe-area-inset-bottom) + 18px);z-index:900;
@@ -98,7 +102,7 @@
   .fab:active{transform:translateX(-50%) scale(.97)}
   .fab svg{width:18px;height:18px}
 
-  /* ---- Hoja inferior (form) ---- */
+  /* ---- Hoja del formulario ---- */
   .scrim{position:fixed;inset:0;background:rgba(15,27,45,.45);z-index:1100;
     opacity:0;pointer-events:none;transition:opacity .2s}
   .scrim.show{opacity:1;pointer-events:auto}
@@ -108,52 +112,60 @@
     padding:14px 16px calc(env(safe-area-inset-bottom) + 16px);
     box-shadow:0 -8px 30px rgba(15,27,45,.25);
     transform:translateY(100%);transition:transform .26s cubic-bezier(.2,.7,.2,1);
-    max-height:88vh;overflow-y:auto
+    max-height:90vh;overflow-y:auto;
   }
   .sheet.show{transform:translateY(0)}
-  .grip{width:38px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 12px}
+  .grip{width:38px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 14px}
   .sheet h2{margin:0 0 2px;font-size:17px;font-weight:680}
-  .sheet .hint{margin:0 0 14px;font-size:12.5px;color:var(--muted)}
+  .sheet .hint{margin:0 0 16px;font-size:12.5px;color:var(--muted)}
 
-  .field{margin-bottom:13px}
-  .field label{display:block;font-size:12px;font-weight:600;margin-bottom:5px;color:var(--ink)}
-  .field input[type=text],.field input[type=tel],.field textarea,.field select{
+  /* ---- Campos del formulario ---- */
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--ink)}
+  .field input[type=text],.field input[type=tel],.field textarea{
     width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;
-    font-size:15px;background:var(--surface-2);color:var(--ink);
-    -webkit-appearance:none;appearance:none;font-family:inherit;
+    font-size:15px;background:var(--surface-2);color:var(--ink);font-family:inherit;
   }
-  .field textarea{resize:vertical;min-height:76px}
-  .field select{
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpolyline points='1,2 6,7 11,2' fill='none' stroke='%235c6b7e' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;
+  .field textarea{resize:none;min-height:80px}
+  .field input:focus,.field textarea:focus{outline:2px solid var(--signal);outline-offset:1px;background:#fff}
+
+  /* Chips de categoría */
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:9px 14px;border-radius:999px;
+    border:1.5px solid var(--line);background:var(--surface-2);
+    font-size:13px;font-weight:600;color:var(--muted);
+    cursor:pointer;white-space:nowrap;
+    transition:background .13s,color .13s,border-color .13s;
   }
-  .field input:focus,.field textarea:focus,.field select:focus{
-    outline:2px solid var(--signal);outline-offset:1px;background:#fff
-  }
-  /* campo con prefijo @ */
-  .prefix-wrap{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;
-    background:var(--surface-2);overflow:hidden}
+  .chip:active{opacity:.8}
+
+  /* Campo con prefijo @ */
+  .prefix-wrap{display:flex;align-items:center;border:1px solid var(--line);
+    border-radius:10px;background:var(--surface-2);overflow:hidden}
   .prefix-wrap:focus-within{outline:2px solid var(--signal);outline-offset:1px;background:#fff}
   .prefix-wrap .pfx{padding:11px 0 11px 12px;font-size:15px;color:var(--muted);user-select:none}
-  .prefix-wrap input{border:none;outline:none;background:transparent;padding:11px 12px;
-    flex:1;font-size:15px;color:var(--ink);font-family:inherit}
+  .prefix-wrap input{border:none;outline:none;background:transparent;
+    padding:11px 12px;flex:1;font-size:15px;color:var(--ink);font-family:inherit}
 
+  /* Selector de ubicación */
   .loc-row{display:flex;gap:8px;align-items:stretch}
   .loc-row .locbox{
     flex:1;min-width:0;display:flex;align-items:center;padding:10px 12px;
     border:1px dashed var(--line);border-radius:10px;background:var(--surface-2);
-    font-size:12.5px;color:var(--muted)
+    font-size:12.5px;color:var(--muted);
   }
   .loc-row .locbox.set{border-style:solid;color:var(--ink);font-weight:600}
   .btn-ghost{
     border:1px solid var(--signal);background:#fff;color:var(--signal-ink);
-    font-weight:650;font-size:13px;border-radius:10px;padding:0 14px;cursor:pointer;white-space:nowrap
+    font-weight:650;font-size:13px;border-radius:10px;padding:0 14px;cursor:pointer;white-space:nowrap;
   }
   .btn-ghost:active{background:var(--surface-2)}
 
   .submit{
     width:100%;margin-top:4px;padding:14px;border:none;border-radius:12px;cursor:pointer;
-    background:var(--signal);color:#fff;font-size:16px;font-weight:680
+    background:var(--signal);color:#fff;font-size:16px;font-weight:680;
   }
   .submit:disabled{opacity:.5}
   .submit:active:not(:disabled){transform:scale(.99)}
@@ -169,7 +181,7 @@
   .pop .actions{display:flex;gap:6px;margin-top:9px}
   .pop .actions a{
     flex:1;text-align:center;text-decoration:none;font-size:12px;font-weight:650;
-    padding:8px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--ink)
+    padding:8px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--ink);
   }
   .pop .actions .go{background:var(--signal);color:#fff;border-color:var(--signal)}
 
@@ -178,7 +190,7 @@
     position:fixed;left:50%;transform:translateX(-50%) translateY(20px);
     bottom:calc(env(safe-area-inset-bottom) + 90px);z-index:1300;
     background:var(--ink);color:#fff;padding:11px 18px;border-radius:999px;
-    font-size:13px;font-weight:600;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.25s
+    font-size:13px;font-weight:600;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.25s;
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
@@ -214,16 +226,21 @@
 <form class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
   <div class="grip"></div>
   <h2 id="sheet-title">Publicar un pedido</h2>
-  <p class="hint">Contá qué necesitás. Otros podrán ver tu pedido en el mapa y contactarte.</p>
+  <p class="hint">Dejá tu teléfono para que puedan contactarte.</p>
+
+  <div class="field">
+    <label for="f-tel">Teléfono de contacto <span style="color:var(--danger)" aria-hidden="true">*</span></label>
+    <input type="tel" id="f-tel" placeholder="Ej: +58 412 555 1234" maxlength="30" autocomplete="tel">
+  </div>
+
+  <div class="field">
+    <label>Categoría <span style="color:var(--danger)" aria-hidden="true">*</span></label>
+    <div class="chips" id="chips-cat"></div>
+  </div>
 
   <div class="field">
     <label for="f-pedido">¿Qué necesitás? <span style="color:var(--danger)" aria-hidden="true">*</span></label>
     <textarea id="f-pedido" placeholder="Ej: Necesito insulina para diabético. Urgente." maxlength="200" autocomplete="off" rows="3"></textarea>
-  </div>
-
-  <div class="field">
-    <label for="f-cat">Categoría <span style="color:var(--danger)" aria-hidden="true">*</span></label>
-    <select id="f-cat"></select>
   </div>
 
   <div class="field">
@@ -232,11 +249,6 @@
       <div class="locbox" id="locbox">Tocá el mapa o usá tu ubicación →</div>
       <button type="button" class="btn-ghost" id="use-gps">Mi ubicación</button>
     </div>
-  </div>
-
-  <div class="field">
-    <label for="f-tel">Teléfono de contacto <span style="color:var(--muted);font-weight:500">(opcional)</span></label>
-    <input type="tel" id="f-tel" placeholder="Ej: +58 412 555 1234" maxlength="30" autocomplete="tel">
   </div>
 
   <div class="field">
@@ -265,16 +277,42 @@
   let tickets    = [];
   let pickLatLng = null;
   let pickMarker = null;
+  let categoria  = CATEGORIAS[0].v;
   const markers  = {};
 
-  // ---------- Poblar select de categorías ----------
-  const selCat = document.getElementById("f-cat");
-  CATEGORIAS.forEach(c => {
-    const opt = document.createElement("option");
-    opt.value = c.v;
-    opt.textContent = c.emoji + " " + c.label;
-    selCat.appendChild(opt);
-  });
+  // ---------- Chips de categoría ----------
+  (function buildChips(){
+    const container = document.getElementById("chips-cat");
+    CATEGORIAS.forEach((c, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "chip";
+      btn.dataset.v = c.v;
+      btn.textContent = c.emoji + " " + c.label;
+      btn.setAttribute("aria-pressed", i === 0 ? "true" : "false");
+      if (i === 0) _chipOn(btn, c);
+      btn.addEventListener("click", () => {
+        categoria = c.v;
+        container.querySelectorAll(".chip").forEach(b => {
+          const active = b.dataset.v === c.v;
+          b.setAttribute("aria-pressed", active ? "true" : "false");
+          if (active) _chipOn(b, c); else _chipOff(b);
+        });
+      });
+      container.appendChild(btn);
+    });
+  })();
+
+  function _chipOn(btn, cat){
+    btn.style.background  = cat.color;
+    btn.style.borderColor = cat.color;
+    btn.style.color       = "#fff";
+  }
+  function _chipOff(btn){
+    btn.style.background  = "";
+    btn.style.borderColor = "";
+    btn.style.color       = "";
+  }
 
   // ---------- Leyenda dinámica ----------
   document.getElementById("legend").innerHTML =
@@ -290,13 +328,13 @@
     maxZoom: 19, attribution: "© OpenStreetMap"
   }).addTo(map);
 
-  function colorFor(t) {
+  function colorFor(t){
     if (t.status === "closed") return "#8593a3";
     const cat = CATEGORIAS.find(c => c.v === t.categoria);
     return cat ? cat.color : "#5c6b7e";
   }
 
-  function icon(t) {
+  function icon(t){
     const c = colorFor(t);
     return L.divIcon({
       className: "", iconSize: [22, 22], iconAnchor: [11, 11],
@@ -305,24 +343,24 @@
     });
   }
 
-  function popupHtml(t) {
+  function popupHtml(t){
     const cat    = CATEGORIAS.find(c => c.v === t.categoria) || { label: t.categoria || "Otros", emoji: "📦", color: "#5c6b7e" };
     const closed = t.status === "closed";
     const tagBg    = closed ? "#eceff3" : cat.color + "22";
     const tagColor = closed ? "#8593a3" : cat.color;
-    const tag  = `<span class="tag" style="background:${tagBg};color:${tagColor}">${cat.emoji} ${cat.label}</span>`;
-    const when = t.ts ? `<div class="meta">Publicado ${ago(t.ts)}</div>` : "";
-    const tel  = t.telefono ? `<a href="tel:${esc(t.telefono)}">📞 ${esc(t.telefono)}</a>` : "";
-    const ig   = t.instagram ? t.instagram.replace(/^@/, "") : "";
-    const igLink = ig ? `<a href="https://instagram.com/${esc(ig)}" target="_blank" rel="noopener">📷 @${esc(ig)}</a>` : "";
-    const contact = (tel || igLink) ? `<div class="contact">${tel}${igLink}</div>` : "";
-    const dir  = `https://www.openstreetmap.org/directions?to=${t.lat},${t.lng}`;
+    const tag      = `<span class="tag" style="background:${tagBg};color:${tagColor}">${cat.emoji} ${cat.label}</span>`;
+    const when     = t.ts ? `<div class="meta">Publicado ${ago(t.ts)}</div>` : "";
+    const tel      = t.telefono ? `<a href="tel:${esc(t.telefono)}">📞 ${esc(t.telefono)}</a>` : "";
+    const ig       = t.instagram ? t.instagram.replace(/^@/, "") : "";
+    const igLink   = ig ? `<a href="https://instagram.com/${esc(ig)}" target="_blank" rel="noopener">📷 @${esc(ig)}</a>` : "";
+    const contact  = (tel || igLink) ? `<div class="contact">${tel}${igLink}</div>` : "";
+    const dir      = `https://www.openstreetmap.org/directions?to=${t.lat},${t.lng}`;
     return `<div class="pop"><b>${esc(t.pedido)}</b><br>${tag}${when}${contact}
       <div class="actions"><a class="go" href="${dir}" target="_blank" rel="noopener">Cómo llegar</a></div>
     </div>`;
   }
 
-  function render() {
+  function render(){
     Object.values(markers).forEach(m => map.removeLayer(m));
     let open = 0;
     tickets.forEach(t => {
@@ -336,23 +374,23 @@
   }
 
   // ---------- Backend ----------
-  async function loadTickets() {
-    if (LOCAL) {
-      try { tickets = JSON.parse(localStorage.getItem(LS_KEY) || "[]"); } catch (e) { tickets = []; }
-      render(); return;
+  async function loadTickets(){
+    if (LOCAL){
+      try { tickets = JSON.parse(localStorage.getItem(LS_KEY) || "[]"); } catch(e){ tickets = []; }
+      render(); emit("tickets:loaded", tickets); return;
     }
     try {
       const r    = await fetch(CONFIG.API_URL, { method: "GET" });
       const data = await r.json();
       tickets = Array.isArray(data) ? data : (data.tickets || []);
-      render();
-    } catch (e) {
+      render(); emit("tickets:loaded", tickets);
+    } catch(e){
       toast("No se pudo cargar. Reintentá.");
     }
   }
 
-  async function send(action, payload) {
-    if (LOCAL) {
+  async function send(action, payload){
+    if (LOCAL){
       if (action === "add") tickets.push(payload);
       localStorage.setItem(LS_KEY, JSON.stringify(tickets));
       return { ok: true };
@@ -366,7 +404,7 @@
   }
 
   // ---------- Selección de ubicación ----------
-  function setPick(latlng) {
+  function setPick(latlng){
     pickLatLng = latlng;
     if (pickMarker) map.removeLayer(pickMarker);
     pickMarker = L.marker(latlng, {
@@ -386,7 +424,7 @@
   });
 
   document.getElementById("use-gps").addEventListener("click", () => {
-    if (!navigator.geolocation) { formErr("Tu equipo no permite geolocalización. Tocá el mapa."); return; }
+    if (!navigator.geolocation){ formErr("Tu equipo no permite geolocalización. Tocá el mapa."); return; }
     formErr("");
     navigator.geolocation.getCurrentPosition(
       pos => {
@@ -405,25 +443,25 @@
   function closeSheet() { sheet.classList.remove("show"); scrim.classList.remove("show"); }
   document.getElementById("open-form").addEventListener("click", openSheet);
   scrim.addEventListener("click", closeSheet);
-  function formErr(m) { document.getElementById("form-err").textContent = m || ""; }
+  function formErr(m){ document.getElementById("form-err").textContent = m || ""; }
 
   // ---------- Submit ----------
   sheet.addEventListener("submit", async e => {
     e.preventDefault();
-    const pedido    = document.getElementById("f-pedido").value.trim();
-    const categoria = document.getElementById("f-cat").value;
     const telefono  = document.getElementById("f-tel").value.trim();
+    const pedido    = document.getElementById("f-pedido").value.trim();
     const instagram = document.getElementById("f-ig").value.trim().replace(/^@/, "");
 
-    if (!pickLatLng) { formErr("Marcá la ubicación en el mapa o con tu GPS."); return; }
+    if (!telefono)   { formErr("El teléfono es obligatorio para que puedan contactarte."); return; }
     if (!pedido)     { formErr("Describí qué necesitás."); return; }
+    if (!pickLatLng) { formErr("Marcá la ubicación en el mapa o con tu GPS."); return; }
     formErr("");
 
     const btn = document.getElementById("submit-btn");
     btn.disabled = true; btn.textContent = "Publicando…";
 
     const t = {
-      id: "t_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+      id:        "t_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
       pedido, categoria, telefono, instagram,
       lat:    +pickLatLng.lat.toFixed(6),
       lng:    +pickLatLng.lng.toFixed(6),
@@ -433,32 +471,41 @@
 
     try {
       await send("add", t);
-      tickets.push(t); render();
+      tickets.push(t); render(); emit("tickets:loaded", tickets);
       resetForm(); closeSheet(); toast("Pedido publicado. ¡Gracias!");
-    } catch (err) {
+    } catch(err){
       formErr("No se pudo publicar. Revisá tu conexión y reintentá.");
     } finally {
       btn.disabled = false; btn.textContent = "Publicar pedido";
     }
   });
 
-  function resetForm() {
-    document.getElementById("f-pedido").value = "";
+  function resetForm(){
     document.getElementById("f-tel").value    = "";
+    document.getElementById("f-pedido").value = "";
     document.getElementById("f-ig").value     = "";
-    selCat.selectedIndex = 0;
-    if (pickMarker) { map.removeLayer(pickMarker); pickMarker = null; }
+    categoria = CATEGORIAS[0].v;
+    document.getElementById("chips-cat").querySelectorAll(".chip").forEach((b, i) => {
+      b.setAttribute("aria-pressed", i === 0 ? "true" : "false");
+      if (i === 0) _chipOn(b, CATEGORIAS[0]); else _chipOff(b);
+    });
+    if (pickMarker){ map.removeLayer(pickMarker); pickMarker = null; }
     pickLatLng = null;
     const box = document.getElementById("locbox");
     box.textContent = "Tocá el mapa o usá tu ubicación →";
     box.classList.remove("set");
   }
 
+  // ---------- Sistema de eventos para los módulos ----------
+  const _hooks = {};
+  function on(ev, fn){ (_hooks[ev] || (_hooks[ev] = [])).push(fn); return window.TicketApp; }
+  function emit(ev, data){ (_hooks[ev] || []).forEach(fn => { try{ fn(data); }catch(e){ console.error("[hook " + ev + "]", e); } }); }
+
   // ---------- Util ----------
-  function esc(s) {
+  function esc(s){
     return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   }
-  function ago(ts) {
+  function ago(ts){
     const m = Math.round((Date.now() - ts) / 60000);
     if (m < 1) return "recién";
     if (m < 60) return `hace ${m} min`;
@@ -467,11 +514,28 @@
     return `hace ${Math.round(h / 24)} d`;
   }
   let toastT;
-  function toast(msg) {
+  function toast(msg){
     const el = document.getElementById("toast");
     el.textContent = msg; el.classList.add("show");
     clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("show"), 2600);
   }
+
+  // ---------- API pública para los módulos de features/ ----------
+  window.TicketApp = {
+    CONFIG, CATEGORIAS, map,
+    get tickets(){ return tickets; },
+    get markers() { return markers; },
+    render, toast, send,
+    colorFor, icon, popupHtml, esc, ago,
+    on,
+    feature(def){
+      if (!def || !def.name || typeof def.init !== "function") return;
+      const flags = (typeof FEATURES !== "undefined") ? FEATURES : {};
+      if (flags[def.name] === false) return;
+      try { def.init(window.TicketApp); }
+      catch(e){ console.error("[feature " + def.name + "]", e); }
+    }
+  };
 
   // ---------- Init ----------
   document.getElementById("mode-label").textContent = LOCAL
@@ -482,5 +546,7 @@
   if (!LOCAL) setInterval(loadTickets, 30000);
 })();
 </script>
+<!-- ===== MÓDULOS (features/) — se activan/desactivan con FEATURES en el <head> ===== -->
+<script src="features/panel.js"></script>
 </body>
 </html>
