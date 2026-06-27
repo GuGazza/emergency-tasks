@@ -1,6 +1,6 @@
 # Mapa de Pedidos — Colaborativo
 
-Aplicación web de una sola página para publicar y encontrar pedidos o solicitudes geolocalizadas. Diseñada para operar sin instalación, desde cualquier navegador móvil, con o sin backend.
+Aplicación web de una sola página para publicar y encontrar pedidos o solicitudes geolocalizadas. Diseñada para operar sin instalación, desde cualquier navegador móvil, con o sin backend. 
 
 ## ¿Qué hace?
 
