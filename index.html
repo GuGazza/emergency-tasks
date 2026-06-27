@@ -116,8 +116,26 @@
   }
   .sheet.show{transform:translateY(0)}
   .grip{width:38px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 14px}
-  .sheet h2{margin:0 0 2px;font-size:17px;font-weight:680}
+  .sheet-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2px}
+  .sheet-header h2{margin:0;font-size:17px;font-weight:680}
+  .sheet-close{border:none;background:none;cursor:pointer;font-size:22px;
+    color:var(--muted);padding:0 0 0 10px;line-height:1;flex:none}
+  .sheet-close:hover{color:var(--ink)}
   .sheet .hint{margin:0 0 16px;font-size:12.5px;color:var(--muted)}
+
+  /* ---- Desktop: panel lateral (≥640px) ---- */
+  @media(min-width:640px){
+    .sheet{
+      left:auto;right:0;bottom:0;top:58px;
+      width:360px;border-radius:20px 0 0 20px;
+      max-height:none;height:calc(100vh - 58px);
+      transform:translateX(110%);
+    }
+    .sheet.show{transform:translateX(0)}
+    .scrim.show{background:rgba(15,27,45,.08);pointer-events:none}
+    .sheet{pointer-events:auto}
+    .grip{display:none}
+  }
 
   /* ---- Campos del formulario ---- */
   .field{margin-bottom:14px}
@@ -202,7 +220,7 @@
 <header class="topbar">
   <span class="dot" aria-hidden="true"></span>
   <div>
-    <h1>Pedidos y Solicitudes</h1>
+    <h1>Pedidos</h1>
     <p id="mode-label">Cargando…</p>
   </div>
   <div class="count"><b id="count-open">0</b><span>abiertos</span></div>
@@ -225,7 +243,10 @@
 <div class="scrim" id="scrim"></div>
 <form class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
   <div class="grip"></div>
-  <h2 id="sheet-title">Publicar un pedido</h2>
+  <div class="sheet-header">
+    <h2 id="sheet-title">Publicar un pedido</h2>
+    <button type="button" class="sheet-close" id="close-form" aria-label="Cerrar formulario">✕</button>
+  </div>
   <p class="hint">Dejá tu teléfono para que puedan contactarte.</p>
 
   <div class="field">
@@ -246,7 +267,7 @@
   <div class="field">
     <label>Ubicación <span style="color:var(--danger)" aria-hidden="true">*</span></label>
     <div class="loc-row">
-      <div class="locbox" id="locbox">Tocá el mapa o usá tu ubicación →</div>
+      <div class="locbox" id="locbox">Elegí en el mapa o usá tu GPS →</div>
       <button type="button" class="btn-ghost" id="use-gps">Mi ubicación</button>
     </div>
   </div>
@@ -442,6 +463,7 @@
   function openSheet()  { sheet.classList.add("show");    scrim.classList.add("show"); }
   function closeSheet() { sheet.classList.remove("show"); scrim.classList.remove("show"); }
   document.getElementById("open-form").addEventListener("click", openSheet);
+  document.getElementById("close-form").addEventListener("click", closeSheet);
   scrim.addEventListener("click", closeSheet);
   function formErr(m){ document.getElementById("form-err").textContent = m || ""; }
 
@@ -492,7 +514,7 @@
     if (pickMarker){ map.removeLayer(pickMarker); pickMarker = null; }
     pickLatLng = null;
     const box = document.getElementById("locbox");
-    box.textContent = "Tocá el mapa o usá tu ubicación →";
+    box.textContent = "Elegí en el mapa o usá tu GPS →";
     box.classList.remove("set");
   }
 
