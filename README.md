@@ -149,9 +149,29 @@ index.html ──fetch("/api")──▶ worker.js ──fetch()──▶ Code.gs
 
 ## Despliegue en Cloudflare Workers
 
+### `wrangler.jsonc`
+
+Este archivo controla cómo se despliega el proyecto en Cloudflare. El campo más relevante es `name`:
+
+```jsonc
+"name": "emergency-tasks"
+```
+
+Ese nombre determina la URL pública del Worker:
+
+```
+https://emergency-tasks.<tu-cuenta>.workers.dev
+```
+
+Si cambiás el nombre, Cloudflare crea un Worker separado — no pisa otros proyectos de la misma cuenta. Cada proyecto (WiFi map, tickets, etc.) debe tener su propio nombre y su propio despliegue.
+
+### Publicar
+
 ```bash
 npx wrangler deploy
 ```
+
+Al finalizar, Wrangler muestra la URL donde quedó publicado. Usá esa URL para probar — no la de otro Worker.
 
 El Worker sirve `index.html` y los estáticos, y atiende `/api` como proxy hacia Apps Script.
 

@@ -1,6 +1,18 @@
 {
+  // Configuración de despliegue en Cloudflare Workers.
+  //
+  // CÓMO SE DESPLIEGA:
+  // Este proyecto está conectado al repo de GitHub desde el dashboard de Cloudflare
+  // (Workers & Pages → Create → Connect to Git). Cada `git push` dispara automáticamente
+  // el deploy en Cloudflare — no hace falta ejecutar `npx wrangler deploy` manualmente.
+  // Para ver el historial de deploys: Cloudflare dashboard → Workers & Pages → emergency-tasks → Deployments.
+  //
+  // IMPORTANTE: el campo "name" determina la URL pública del Worker:
+  //   emergency-tasks  →  https://emergency-tasks.<tu-cuenta>.workers.dev
+  // Cambiarlo si querés un subdominio distinto.
+  // Cada nombre distinto crea un Worker separado en Cloudflare; no sobreescribe otros proyectos.
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "tickets",
+  "name": "emergency-tasks",
   "main": "worker.js",
   "compatibility_date": "2026-06-27",
   "observability": {
