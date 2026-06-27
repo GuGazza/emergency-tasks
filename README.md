@@ -165,13 +165,29 @@ https://emergency-tasks.<tu-cuenta>.workers.dev
 
 Si cambiás el nombre, Cloudflare crea un Worker separado — no pisa otros proyectos de la misma cuenta. Cada proyecto (WiFi map, tickets, etc.) debe tener su propio nombre y su propio despliegue.
 
-### Publicar
+### Conectar el repo de GitHub para deploy automático
+
+El deploy se dispara automáticamente en cada `git push` a `main`, siempre que el Worker esté vinculado al repo en Cloudflare. Para configurarlo:
+
+1. **Cloudflare dashboard → Workers & Pages → `emergency-tasks` → Settings → Build → Connect a repository**
+2. Si el repo `GuGazza/emergency-tasks` no aparece en la lista, hay que autorizar la GitHub App de Cloudflare:
+   - Ir a **GitHub → (ícono de perfil) → Settings → Applications → Installed GitHub Apps**
+   - Buscar la app **Cloudflare Workers** → **Configure**
+   - En **Repository access** → agregar `emergency-tasks` (o elegir _All repositories_)
+   - Guardar y volver al paso 1 — el repo ya debería aparecer
+3. Una vez conectado, cada push a `main` genera un deploy visible en la pestaña **Deployments** del Worker.
+
+> Si el banner "This project is disconnected from your Git account" aparece en Cloudflare, repetir el paso 2 para reconectar la GitHub App.
+
+### Publicar manualmente (alternativa)
+
+Si no se usa la integración con GitHub, se puede desplegar desde la terminal:
 
 ```bash
 npx wrangler deploy
 ```
 
-Al finalizar, Wrangler muestra la URL donde quedó publicado. Usá esa URL para probar — no la de otro Worker.
+Al finalizar, Wrangler muestra la URL donde quedó publicado.
 
 El Worker sirve `index.html` y los estáticos, y atiende `/api` como proxy hacia Apps Script.
 
