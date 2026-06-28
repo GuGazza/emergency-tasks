@@ -219,6 +219,42 @@
   }
   .pop .actions .go{background:var(--signal);color:#fff;border-color:var(--signal)}
 
+  /* ---- Botón de ayuda ---- */
+  .help-btn{
+    width:30px;height:30px;border-radius:50%;flex:none;
+    background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);
+    color:#fff;font-size:15px;font-weight:700;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  .help-btn:active{background:rgba(255,255,255,.28)}
+
+  /* ---- Modal de ayuda ---- */
+  .help-scrim{
+    position:fixed;inset:0;z-index:2000;
+    background:rgba(15,27,45,.82);
+    display:flex;align-items:flex-start;justify-content:center;
+    padding:calc(env(safe-area-inset-top) + 14px) 14px calc(env(safe-area-inset-bottom) + 14px);
+    overflow-y:auto;-webkit-overflow-scrolling:touch;
+    opacity:0;pointer-events:none;transition:opacity .2s;
+  }
+  .help-scrim.show{opacity:1;pointer-events:auto}
+  .help-modal{
+    position:relative;width:100%;max-width:460px;
+    border-radius:16px;overflow:hidden;
+    box-shadow:0 8px 40px rgba(0,0,0,.5);
+    transform:scale(.96) translateY(10px);transition:transform .22s;
+  }
+  .help-scrim.show .help-modal{transform:scale(1) translateY(0)}
+  .help-modal img{display:block;width:100%;height:auto}
+  .help-close{
+    position:absolute;top:10px;right:10px;
+    width:34px;height:34px;border-radius:50%;
+    background:rgba(15,27,45,.65);border:none;cursor:pointer;
+    color:#fff;font-size:17px;line-height:1;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .help-close:active{background:rgba(15,27,45,.85)}
+
   /* ---- Toast ---- */
   .toast{
     position:fixed;left:50%;transform:translateX(-50%) translateY(20px);
@@ -241,6 +277,7 @@
   </div>
   <div class="topbar-right">
     <div class="count"><b id="count-open">0</b><span>abiertos</span></div>
+    <button class="help-btn" id="open-help" aria-label="Cómo usar la app">?</button>
   </div>
 </header>
 
@@ -305,6 +342,14 @@
 <div class="pick-bar" id="pick-bar" role="status">
   <span class="pb-txt">📍 Toca el mapa para marcar la ubicación</span>
   <button type="button" class="pb-cancel" id="pick-cancel">Cancelar</button>
+</div>
+
+<!-- Modal de ayuda -->
+<div class="help-scrim" id="help-scrim" role="dialog" aria-modal="true" aria-label="Cómo usar la app">
+  <div class="help-modal">
+    <img src="como-usar.png" alt="Guía de uso de la app">
+    <button class="help-close" id="close-help" aria-label="Cerrar ayuda">✕</button>
+  </div>
 </div>
 
 <div class="toast" id="toast" role="status"></div>
@@ -596,6 +641,12 @@
       catch(e){ console.error("[feature " + def.name + "]", e); }
     }
   };
+
+  // ---------- Modal de ayuda ----------
+  const helpScrim = document.getElementById("help-scrim");
+  document.getElementById("open-help").addEventListener("click", () => helpScrim.classList.add("show"));
+  document.getElementById("close-help").addEventListener("click", () => helpScrim.classList.remove("show"));
+  helpScrim.addEventListener("click", e => { if (e.target === helpScrim) helpScrim.classList.remove("show"); });
 
   // ---------- Init ----------
   document.getElementById("mode-label").textContent = LOCAL
