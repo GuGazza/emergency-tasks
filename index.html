@@ -392,10 +392,12 @@
 
   function render(){
     Object.values(markers).forEach(m => map.removeLayer(m));
+    Object.keys(markers).forEach(k => delete markers[k]);
     let open = 0;
     tickets.forEach(t => {
+      if (!t.id || isNaN(parseFloat(t.lat)) || isNaN(parseFloat(t.lng))) return;
       if (t.status !== "closed") open++;
-      const m = L.marker([t.lat, t.lng], { icon: icon(t) })
+      const m = L.marker([+t.lat, +t.lng], { icon: icon(t) })
         .addTo(map)
         .bindPopup(popupHtml(t));
       markers[t.id] = m;
