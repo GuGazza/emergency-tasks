@@ -118,6 +118,23 @@
   .sheet-close:hover{color:var(--ink)}
   .sheet .hint{margin:0 0 16px;font-size:12.5px;color:var(--muted)}
 
+  /* ---- Modo "marcar en el mapa" (móvil): baja el formulario y libera el mapa ---- */
+  body.picking .scrim{opacity:0;pointer-events:none}
+  body.picking .sheet.show{transform:translateY(100%)}
+  .pick-bar{
+    position:fixed;left:10px;right:10px;
+    bottom:calc(env(safe-area-inset-bottom) + 18px);z-index:1250;
+    background:var(--ink);color:#fff;
+    padding:12px 14px;border-radius:14px;box-shadow:var(--shadow);
+    display:none;align-items:center;gap:10px;font-size:13.5px;font-weight:600;
+  }
+  body.picking .pick-bar{display:flex}
+  .pick-bar .pb-txt{flex:1;line-height:1.3}
+  .pick-bar .pb-cancel{
+    border:1px solid rgba(255,255,255,.4);background:transparent;color:#fff;
+    font-weight:650;font-size:13px;border-radius:9px;padding:8px 12px;cursor:pointer;flex:none;
+  }
+
   /* ---- Desktop: panel lateral (≥640px) ---- */
   @media(min-width:640px){
     .sheet{
@@ -130,6 +147,9 @@
     .scrim.show{background:rgba(15,27,45,.08);pointer-events:none}
     .sheet{pointer-events:auto}
     .grip{display:none}
+    /* En escritorio el mapa ya es tocable: el modo picking no aplica */
+    body.picking .sheet.show{transform:translateX(0)}
+    body.picking .pick-bar{display:none}
   }
 
   /* ---- Campos del formulario ---- */
@@ -167,8 +187,9 @@
   .loc-row .locbox{
     flex:1;min-width:0;display:flex;align-items:center;padding:10px 12px;
     border:1px dashed var(--line);border-radius:10px;background:var(--surface-2);
-    font-size:12.5px;color:var(--muted);
+    font-size:12.5px;color:var(--muted);cursor:pointer;
   }
+  .loc-row .locbox:active{background:var(--line)}
   .loc-row .locbox.set{border-style:solid;color:var(--ink);font-weight:600}
   .btn-ghost{
     border:1px solid var(--signal);background:#fff;color:var(--signal-ink);
@@ -263,7 +284,7 @@
   <div class="field">
     <label>Ubicación <span style="color:var(--danger)" aria-hidden="true">*</span></label>
     <div class="loc-row">
-      <div class="locbox" id="locbox">Elige en el mapa o usa tu GPS →</div>
+      <div class="locbox" id="locbox" role="button" tabindex="0">📍 Toca aquí para marcar en el mapa</div>
       <button type="button" class="btn-ghost" id="use-gps">Mi ubicación</button>
     </div>
   </div>
@@ -279,6 +300,12 @@
   <button type="submit" class="submit" id="submit-btn">Publicar pedido</button>
   <p class="err" id="form-err" aria-live="polite"></p>
 </form>
+
+<!-- Barra del modo "marcar en el mapa" (móvil) -->
+<div class="pick-bar" id="pick-bar" role="status">
+  <span class="pb-txt">📍 Toca el mapa para marcar la ubicación</span>
+  <button type="button" class="pb-cancel" id="pick-cancel">Cancelar</button>
+</div>
 
 <div class="toast" id="toast" role="status"></div>
 
@@ -438,7 +465,7 @@
   }
 
   map.on("click", e => {
-    if (document.getElementById("sheet").classList.contains("show")) setPick(e.latlng);
+    if (document.getElementById("sheet").classList.contains("show")){ setPick(e.latlng); exitPick(); }
   });
 
   document.getElementById("use-gps").addEventListener("click", () => {
@@ -458,11 +485,25 @@
   const sheet = document.getElementById("sheet");
   const scrim = document.getElementById("scrim");
   function openSheet()  { sheet.classList.add("show");    scrim.classList.add("show"); }
-  function closeSheet() { sheet.classList.remove("show"); scrim.classList.remove("show"); }
+  function closeSheet() { sheet.classList.remove("show"); scrim.classList.remove("show"); exitPick(); }
   document.getElementById("open-form").addEventListener("click", openSheet);
   document.getElementById("close-form").addEventListener("click", closeSheet);
   scrim.addEventListener("click", closeSheet);
   function formErr(m){ document.getElementById("form-err").textContent = m || ""; }
+
+  // ---------- Modo "marcar en el mapa" (móvil) ----------
+  // En móvil el formulario tapa el mapa. Al tocar el recuadro de ubicación,
+  // el formulario se baja y libera el mapa para marcar con el dedo.
+  const isDesktop = () => window.matchMedia("(min-width:640px)").matches;
+  function enterPick(){
+    if (isDesktop()){ toast("Toca el mapa para marcar la ubicación."); return; }
+    document.body.classList.add("picking");
+  }
+  function exitPick(){ document.body.classList.remove("picking"); }
+  const locboxEl = document.getElementById("locbox");
+  locboxEl.addEventListener("click", enterPick);
+  locboxEl.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); enterPick(); } });
+  document.getElementById("pick-cancel").addEventListener("click", exitPick);
 
   // ---------- Submit ----------
   sheet.addEventListener("submit", async e => {
@@ -511,7 +552,7 @@
     if (pickMarker){ map.removeLayer(pickMarker); pickMarker = null; }
     pickLatLng = null;
     const box = document.getElementById("locbox");
-    box.textContent = "Elige en el mapa o usa tu GPS →";
+    box.textContent = "📍 Toca aquí para marcar en el mapa";
     box.classList.remove("set");
   }
 
