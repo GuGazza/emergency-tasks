@@ -36,6 +36,17 @@ export default {
     }
 
     // resto -> archivos estáticos (index.html, etc.)
-    return env.ASSETS.fetch(request);
+    const asset = await env.ASSETS.fetch(request);
+    const ct = asset.headers.get("Content-Type") || "";
+    if (ct.includes("text/html") || ct.includes("javascript")) {
+      const headers = new Headers(asset.headers);
+      headers.set("Cache-Control", "no-cache");
+      return new Response(asset.body, {
+        status: asset.status,
+        statusText: asset.statusText,
+        headers,
+      });
+    }
+    return asset;
   },
 };
