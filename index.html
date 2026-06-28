@@ -415,10 +415,12 @@
       const r    = await fetch(CONFIG.API_URL, { method: "GET" });
       const data = await r.json();
       tickets = Array.isArray(data) ? data : (data.tickets || []);
-      render(); emit("tickets:loaded", tickets);
     } catch(e){
       toast("No se pudo cargar. Intenta de nuevo.");
+      return;
     }
+    try { render(); } catch(e){ console.error("[render]", e); }
+    emit("tickets:loaded", tickets);
   }
 
   async function send(action, payload){
